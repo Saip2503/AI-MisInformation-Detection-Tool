@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Layout from "@/components/Layout";
 
+// Updated interface to match the full data object we now save
 interface HistoryItem {
   id: number;
-  preview: string;
+  text: string; // We now have the full text
+  verdict: string;
   credibilityScore: number;
+  evidence: any[]; // And the evidence array
   timestamp: string;
 }
 
 const History = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('analysisHistory');
@@ -26,6 +30,14 @@ const History = () => {
   const clearHistory = () => {
     localStorage.removeItem('analysisHistory');
     setHistory([]);
+  };
+
+  // This function handles clicking on a past analysis item
+  const viewHistoryItem = (item: HistoryItem) => {
+    // Set the selected item as the "current" analysis in session storage
+    sessionStorage.setItem('currentAnalysis', JSON.stringify(item));
+    // Navigate to the analysis page to view the details
+    navigate('/analysis');
   };
 
   const formatTimeAgo = (timestamp: string) => {
@@ -90,28 +102,36 @@ const History = () => {
             </Card>
           ) : (
             history.map((item) => (
-              <Card key={item.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground mb-2">
-                        {item.preview}
-                      </h3>
-                      <div className="flex items-center space-x-4">
-                        <Badge 
-                          className={`${getCredibilityColor(item.credibilityScore)} text-white`}
-                        >
-                          {item.credibilityScore}% credible
-                        </Badge>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {formatTimeAgo(item.timestamp)}
+              // Make the entire card clickable
+              <div
+                key={item.id}
+                onClick={() => viewHistoryItem(item)}
+                className="cursor-pointer"
+              >
+                <Card className="hover:shadow-md transition-shadow hover:border-primary/50">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground mb-2">
+                          {/* Create a text preview */}
+                          {item.text.substring(0, 80) + (item.text.length > 80 ? '...' : '')}
+                        </h3>
+                        <div className="flex items-center space-x-4">
+                          <Badge 
+                            className={`${getCredibilityColor(item.credibilityScore)} text-white`}
+                          >
+                            {item.credibilityScore}% credible
+                          </Badge>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {formatTimeAgo(item.timestamp)}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             ))
           )}
         </div>

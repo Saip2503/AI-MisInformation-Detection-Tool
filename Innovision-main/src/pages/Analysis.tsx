@@ -1,18 +1,28 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Twitter } from "lucide-react";
 import Layout from "@/components/Layout";
 import CredibilityCircle from "@/components/CredibilityCircle";
 
+// New interface for individual evidence items
+interface EvidenceItem {
+  type: string;
+  source: string | null;
+  title: string | null;
+  url: string | null;
+  text: string;
+  sim: number;
+}
+
+// Updated interface to match the data structure from Home.tsx
 interface AnalysisData {
   text: string;
+  verdict: string;
   credibilityScore: number;
-  concerningTerms: string[];
-  supportingTerms: string[];
-  references: string[];
+  evidence: EvidenceItem[];
   timestamp: string;
 }
 
@@ -25,12 +35,13 @@ const Analysis = () => {
     if (data) {
       setAnalysisData(JSON.parse(data));
     } else {
+      // If no data, redirect to the home page to start a new analysis
       navigate('/');
     }
   }, [navigate]);
 
   if (!analysisData) {
-    return <Layout><div>Loading...</div></Layout>;
+    return <Layout><div>Loading analysis...</div></Layout>;
   }
 
   const getCredibilityDescription = (score: number) => {
@@ -60,9 +71,11 @@ const Analysis = () => {
               <CardTitle className="text-lg">Credibility Assessment</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="mb-6">
+              <div className="mb-4">
                 <CredibilityCircle percentage={analysisData.credibilityScore} />
               </div>
+              {/* Display the API's verdict */}
+              <h3 className="text-2xl font-bold mb-4">{analysisData.verdict}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {getCredibilityDescription(analysisData.credibilityScore)}
               </p>
@@ -83,56 +96,39 @@ const Analysis = () => {
               </CardContent>
             </Card>
 
-            {/* Key Terms Analysis */}
+            {/* Evidence Section */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Key Terms Analysis</CardTitle>
+                <CardTitle className="text-lg">Evidence</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium text-destructive mb-2">Concerning Terms:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {analysisData.concerningTerms.map((term, index) => (
-                      <Badge key={index} variant="destructive" className="text-xs">
-                        {term}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-success mb-2">Supporting Terms:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {analysisData.supportingTerms.map((term, index) => (
-                      <Badge key={index} className="bg-success text-success-foreground text-xs">
-                        {term}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Fact-Check References */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Fact-Check References</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {analysisData.references.map((reference, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-                  >
-                    <span className="text-sm text-muted-foreground">
-                      Reference {index + 1}
-                    </span>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={reference} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </Button>
-                  </div>
-                ))}
+                {analysisData.evidence.length > 0 ? (
+                  analysisData.evidence.map((item, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-muted/50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          {item.type === 'tweet' && <Twitter className="w-4 h-4 text-sky-500" />}
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {item.type || 'Source'}
+                          </span>
+                        </div>
+                        <Badge variant="secondary">
+                          Similarity: {Math.round(item.sim * 100)}%
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-foreground mb-3">{item.text}</p>
+                      {item.url && (
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs">
+                            View Source <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No evidence was found for this analysis.</p>
+                )}
               </CardContent>
             </Card>
           </div>

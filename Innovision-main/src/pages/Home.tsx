@@ -13,40 +13,58 @@ const Home = () => {
 
   const handleAnalyze = async () => {
     if (!text.trim()) return;
-    
+
     setIsAnalyzing(true);
-    
-    // Simulate API call - replace with actual backend integration
-    setTimeout(() => {
-      // Store the analysis data in sessionStorage for demo
+    // Append the correct endpoint to the base URL from your .env file
+    const apiUrl = `${import.meta.env.VITE_API_URL}/verify`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const apiResponse = await response.json();
+
+      // **MODIFICATION**: Create a new object that matches the structure your /analysis page will need
       const analysisResult = {
-        text: text,
-        credibilityScore: Math.floor(Math.random() * 100),
-        concerningTerms: ["unverified", "rumor", "allegedly"],
-        supportingTerms: ["verified", "confirmed", "according to"],
-        references: [
-          "https://example.com/fact-check-1",
-          "https://example.com/fact-check-2",
-          "https://example.com/fact-check-3"
-        ],
-        timestamp: new Date().toISOString()
+        id: Date.now(),
+        text: text, // The original text submitted by the user
+        verdict: apiResponse.verdict, // e.g., "Likely True"
+        credibilityScore: Math.round(apiResponse.score * 100), // Convert score (0.87) to a percentage (87)
+        evidence: apiResponse.evidence, // The array of evidence from the API
+        timestamp: new Date().toISOString() // Add a timestamp
       };
-      
+
+      // Store the complete, structured analysis data in sessionStorage
       sessionStorage.setItem('currentAnalysis', JSON.stringify(analysisResult));
-      
-      // Save to history
+
+      // Save a summary to history in localStorage
       const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+      history.unshift(analysisResult); 
       history.unshift({
         id: Date.now(),
         preview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-        credibilityScore: analysisResult.credibilityScore,
+        credibilityScore: analysisResult.credibilityScore, // Use the new percentage score
         timestamp: analysisResult.timestamp
       });
       localStorage.setItem('analysisHistory', JSON.stringify(history.slice(0, 10)));
-      
-      setIsAnalyzing(false);
+
       navigate('/analysis');
-    }, 2000);
+
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      alert("Failed to analyze the text. Please check your connection and try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -83,7 +101,7 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Features Section */}
+        {/* Features Section (No changes here) */}
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <Card className="text-center p-6 border-2 hover:border-primary/50 transition-colors">
             <CardContent className="pt-6">
@@ -94,7 +112,6 @@ const Home = () => {
               <p className="text-muted-foreground">Get results in seconds</p>
             </CardContent>
           </Card>
-
           <Card className="text-center p-6 border-2 hover:border-primary/50 transition-colors">
             <CardContent className="pt-6">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -104,7 +121,6 @@ const Home = () => {
               <p className="text-muted-foreground">Advanced algorithms</p>
             </CardContent>
           </Card>
-
           <Card className="text-center p-6 border-2 hover:border-primary/50 transition-colors">
             <CardContent className="pt-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

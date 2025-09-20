@@ -8,7 +8,7 @@ import tweepy
 from app.database import SessionLocal, engine
 from app.models import Check, Base
 from app.schemas import QueryIn, VerifyOut, EvidenceItem
-
+from fastapi.middleware.cors import CORSMiddleware
 # BERT imports
 import torch
 import torch.nn.functional as F
@@ -19,6 +19,25 @@ load_dotenv()
 
 # --- FastAPI instance ---
 app = FastAPI(title="Fake News Verifier")
+
+# --- ADD THIS CORS MIDDLEWARE SECTION ---
+# This allows your frontend to communicate with your backend
+origins = [
+    "http://localhost:5173",  # For Vite/React development
+    "http://localhost:3000",  # Common port for Create React App
+    "http://localhost:8080"
+    # e.g., "https://your-frontend-domain.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+# --- END OF CORS SECTION ---
+
 # --- DB setup ---
 def get_db():
     db = SessionLocal()
