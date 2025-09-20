@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy==1.4.52
+psycopg2-binary
+requests
+tweepy==4.16.0
+python-dotenv
+sentence-transformers==2.2.2
+numpy
+pydantic>=1.10,<3
