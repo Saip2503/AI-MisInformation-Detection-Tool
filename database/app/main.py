@@ -5,11 +5,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 import requests
 import tweepy
-
-from database import SessionLocal, engine
-from models import Check, Base
-from classifier import compute_similarities
-from schemas import QueryIn, VerifyOut, EvidenceItem
+from app.classifier import compute_similarities
+from app.database import SessionLocal, engine
+from app.models import Check, Base
+from app.schemas import QueryIn, VerifyOut, EvidenceItem
 
 # Load environment variables
 load_dotenv()
