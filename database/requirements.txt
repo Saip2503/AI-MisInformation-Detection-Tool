@@ -10,3 +10,5 @@ numpy
 pydantic>=1.10,<3
 scikit-learn
 pandas
+transformers
+torch

@@ -5,31 +5,29 @@ from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 import requests
 import tweepy
-from app.classifier import compute_similarities
 from app.database import SessionLocal, engine
 from app.models import Check, Base
 from app.schemas import QueryIn, VerifyOut, EvidenceItem
+
+# BERT imports
+import torch
+import torch.nn.functional as F
+from transformers import AutoTokenizer, AutoModel
 
 # Load environment variables
 load_dotenv()
 
 # --- FastAPI instance ---
 app = FastAPI(title="Fake News Verifier")
-
 # --- DB setup ---
-@app.on_event("startup")
-def startup():
-    try:
-        Base.metadata.create_all(bind=engine)
-    except Exception as e:
-        print(f"DB init warning: {e}")
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
 
 # --- Config ---
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
@@ -47,6 +45,39 @@ if TWITTER_BEARER:
     except Exception as e:
         print(f"Twitter client init failed: {e}")
         tw_client = None
+
+# --- BERT model ---
+tokenizer = None
+model = None
+
+@app.on_event("startup")
+def startup():
+    global tokenizer, model
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"DB init warning: {e}")
+
+    # Load BERT
+    tokenizer = AutoTokenizer.from_pretrained("models/distilbert-base-uncased")
+    model = AutoModel.from_pretrained("models/distilbert-base-uncased")
+    model.eval()
+
+# --- Helper functions ---
+def get_embedding(text: str):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.last_hidden_state[:,0,:].squeeze()  # CLS token
+
+def compute_similarities(claim: str, evidence_texts: list):
+    claim_emb = get_embedding(claim)
+    sims = []
+    for text in evidence_texts:
+        text_emb = get_embedding(text)
+        sim = F.cosine_similarity(claim_emb, text_emb, dim=0).item()
+        sims.append(sim)
+    return sims
 
 # --- Endpoint ---
 @app.post("/verify", response_model=VerifyOut)
@@ -112,18 +143,18 @@ def verify(q: QueryIn, db=Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Embedding error: {e}")
 
-    # --- 4) Improved similarity aggregation ---
+    # --- 4) Improved heuristic aggregation ---
     article_sims = [e["sim"] for e in evidence if e["type"] == "article"]
-    tweet_sims_list = [e["sim"] for e in evidence if e["type"] == "tweet"]
+    tweet_sims = [e["sim"] for e in evidence if e["type"] == "tweet"]
 
-    max_article_sim = max(article_sims) if article_sims else 0.0
-    max_tweet_sim = max(tweet_sims_list) if tweet_sims_list else 0.0
+    max_article_sim = max(article_sims) if article_sims else 0
+    max_tweet_sim = max(tweet_sims) if tweet_sims else 0
 
-    score = max(max_article_sim, max_tweet_sim)
+    score = 0.7 * max_article_sim + 0.3 * max_tweet_sim
 
-    if score >= 0.75:               # high confidence
+    if score > 0.6:
         verdict = "Likely True"
-    elif score < 0.35 and evidence:  # low similarity
+    elif score < 0.35:
         verdict = "Likely False"
     else:
         verdict = "Unsure"
@@ -143,6 +174,8 @@ def verify(q: QueryIn, db=Depends(get_db)):
 
     # --- 6) Prepare response ---
     evidence_sorted = sorted(evidence, key=lambda x: x.get("sim", 0), reverse=True)[:10]
-    out_evidence: List[EvidenceItem] = [EvidenceItem(**e) for e in evidence_sorted]
+    out_evidence: List[EvidenceItem] = []
+    for e in evidence_sorted:
+        out_evidence.append(EvidenceItem(**e))
 
     return VerifyOut(verdict=verdict, score=float(score), evidence=out_evidence)

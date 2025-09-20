@@ -1,28 +1,21 @@
-# ---------- Base image ----------
+# Base image
 FROM python:3.10-slim
 
-# ---------- Set workdir ----------
+# Set working directory
 WORKDIR /app
 
-# ---------- Install dependencies ----------
-# System deps for psycopg2 & numpy
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# ---------- Install Python packages ----------
+# Copy Python dependencies first
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------- Copy source ----------
+# Copy application code
 COPY . .
 
-# ---------- Env vars ----------
-ENV PYTHONUNBUFFERED=1 \
-    PORT=8080 \
-    HOST=0.0.0.0
+# Expose port
+ENV PORT=8080
+EXPOSE 8080
 
-# ---------- Run app ----------
+# Set entrypoint
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
