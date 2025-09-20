@@ -13,8 +13,16 @@ from app.schemas import QueryIn, VerifyOut, EvidenceItem
 # Load environment variables
 load_dotenv()
 
+# --- FastAPI instance ---
+app = FastAPI(title="Fake News Verifier")
+
 # --- DB setup ---
-Base.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def startup():
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"DB init warning: {e}")
 
 def get_db():
     db = SessionLocal()
@@ -22,9 +30,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# --- FastAPI instance ---
-app = FastAPI(title="Fake News Verifier")
 
 # --- Config ---
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
@@ -42,7 +47,6 @@ if TWITTER_BEARER:
     except Exception as e:
         print(f"Twitter client init failed: {e}")
         tw_client = None
-
 
 # --- Endpoint ---
 @app.post("/verify", response_model=VerifyOut)
@@ -108,16 +112,18 @@ def verify(q: QueryIn, db=Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Embedding error: {e}")
 
-    # --- 4) Simple heuristic aggregation ---
-    high_article_count = sum(1 for e in evidence if e["type"] == "article" and e["sim"] >= SIM_ART)
+    # --- 4) Improved similarity aggregation ---
+    article_sims = [e["sim"] for e in evidence if e["type"] == "article"]
     tweet_sims_list = [e["sim"] for e in evidence if e["type"] == "tweet"]
-    avg_tweet_sim = sum(tweet_sims_list)/len(tweet_sims_list) if tweet_sims_list else 0.0
 
-    score = high_article_count * 0.6 + avg_tweet_sim * 0.4
+    max_article_sim = max(article_sims) if article_sims else 0.0
+    max_tweet_sim = max(tweet_sims_list) if tweet_sims_list else 0.0
 
-    if high_article_count >= 2 or score > 0.6:
+    score = max(max_article_sim, max_tweet_sim)
+
+    if score >= 0.75:               # high confidence
         verdict = "Likely True"
-    elif score < 0.35 and len(evidence) > 0:
+    elif score < 0.35 and evidence:  # low similarity
         verdict = "Likely False"
     else:
         verdict = "Unsure"
@@ -137,8 +143,6 @@ def verify(q: QueryIn, db=Depends(get_db)):
 
     # --- 6) Prepare response ---
     evidence_sorted = sorted(evidence, key=lambda x: x.get("sim", 0), reverse=True)[:10]
-    out_evidence: List[EvidenceItem] = []
-    for e in evidence_sorted:
-        out_evidence.append(EvidenceItem(**e))
+    out_evidence: List[EvidenceItem] = [EvidenceItem(**e) for e in evidence_sorted]
 
     return VerifyOut(verdict=verdict, score=float(score), evidence=out_evidence)

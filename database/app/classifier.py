@@ -1,43 +1,16 @@
-# app/classifier.py
-
+from typing import List
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-def compute_similarities(texts, reference_texts):
+def compute_similarities(query: str, texts: List[str]) -> List[float]:
     """
-    Compute cosine similarity between each text in `texts` and each text in `reference_texts`.
-
-    Args:
-        texts (list[str]): List of input texts (e.g., news articles or tweets).
-        reference_texts (list[str]): List of reference texts (e.g., known news corpus).
-
-    Returns:
-        list[list[float]]: Cosine similarity matrix [len(texts) x len(reference_texts)].
+    Compute cosine similarity between a query string and a list of texts.
+    Returns a list of similarity scores (0.0 - 1.0).
     """
-    # Combine all texts for TF-IDF vectorization
-    all_texts = texts + reference_texts
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = vectorizer.fit_transform(all_texts)
+    if not texts:
+        return []
 
-    # Split TF-IDF matrix into input and reference
-    input_vecs = tfidf_matrix[:len(texts)]
-    reference_vecs = tfidf_matrix[len(texts):]
-
-    # Compute cosine similarity
-    sim_matrix = cosine_similarity(input_vecs, reference_vecs)
-    return sim_matrix
-
-def is_similar(text, reference_texts, threshold=0.65):
-    """
-    Check if a text is similar to any reference text above a given threshold.
-
-    Args:
-        text (str): Input text.
-        reference_texts (list[str]): List of reference texts.
-        threshold (float): Similarity threshold.
-
-    Returns:
-        bool: True if similar to any reference text, False otherwise.
-    """
-    sim_matrix = compute_similarities([text], reference_texts)
-    return any(sim_matrix[0] >= threshold)
+    vectorizer = TfidfVectorizer().fit([query] + texts)
+    vectors = vectorizer.transform([query] + texts).toarray()
+    sims = cosine_similarity([vectors[0]], vectors[1:])[0]
+    return sims.tolist()
