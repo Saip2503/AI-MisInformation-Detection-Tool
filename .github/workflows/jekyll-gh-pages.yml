@@ -31,7 +31,7 @@ jobs:
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./Innovation-main     # 👈 changed from ./ to Innovation-main
+          source: ./Innovision-main     # 👈 changed from ./ to Innovation-main
           destination: ./_site
 
       - name: Upload artifact
