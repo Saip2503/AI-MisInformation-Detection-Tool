@@ -39,7 +39,7 @@ jobs:
       - name: Upload production-ready build files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Innovision-main/build   # React outputs build here
+          path: Innovision-main/dist
 
   deploy:
     environment:
