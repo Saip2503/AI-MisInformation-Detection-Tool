@@ -24,7 +24,10 @@ app = FastAPI(title="Fake News Verifier")
 origins = [
     "http://localhost:5173",
     "http://localhost:8080",
-    "https://ai-mis-information-detection-tool-97h6jmm89.vercel.app", # Replace with your Vercel URL
+    "https://ai-mis-information-detection-tool-97h6jmm89.vercel.app",
+    "https://ai-mis-information-detection-tool.vercel.app",
+    "https://ai-mis-information-detection-tool-52uink16n.vercel.app",
+    "https://ai-mis-information-detection-git-8be81b-sais-projects-f888ec02.vercel.app",
 ]
 
 app.add_middleware(
