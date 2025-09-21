@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - master
+      - main  # FIX: Changed from 'master' to 'main'
 
 permissions:
   contents: read
@@ -20,20 +20,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Match your development environment
+          node-version: '18'
           cache: 'npm'
+          # FIX: Cache dependencies for the correct sub-directory
+          cache-dependency-path: Innovision-main/package-lock.json
 
       - name: Install Dependencies 📦
-        run: 
-          cd Innovision-main
-          npm install 
+        # FIX: Run commands within the project's sub-directory
+        working-directory: ./Innovision-main
+        run: npm install
 
       - name: Build Project 🏗️
-        run: 
-          cd Innovision-main
-          npm run build
+        working-directory: ./Innovision-main
+        run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }} # Use the secret here
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -41,7 +42,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          # FIX: Point to the correct build output directory
+          path: './Innovision-main/dist'
 
       - name: Deploy to GitHub Pages 🚀
         id: deployment
