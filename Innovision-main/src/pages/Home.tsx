@@ -48,12 +48,7 @@ const Home = () => {
 
       // Save a summary to history in localStorage
       const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
-      history.unshift({
-        id: Date.now(),
-        preview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-        credibilityScore: analysisResult.credibilityScore, // Use the new percentage score
-        timestamp: analysisResult.timestamp
-      });
+      history.unshift(analysisResult);
       localStorage.setItem('analysisHistory', JSON.stringify(history.slice(0, 10)));
 
       navigate('/analysis');

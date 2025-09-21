@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Layout from "@/components/Layout";
 
-// Updated interface to match the full data object we now save
+// This interface defines the structure of each history item
 interface HistoryItem {
   id: number;
-  text: string; // We now have the full text
+  text: string;
   verdict: string;
   credibilityScore: number;
-  evidence: any[]; // And the evidence array
+  evidence: any[];
   timestamp: string;
 }
 
@@ -20,6 +20,7 @@ const History = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const navigate = useNavigate();
 
+  // Load history from localStorage when the component mounts
   useEffect(() => {
     const savedHistory = localStorage.getItem('analysisHistory');
     if (savedHistory) {
@@ -27,12 +28,13 @@ const History = () => {
     }
   }, []);
 
+  // Function to clear the entire history
   const clearHistory = () => {
     localStorage.removeItem('analysisHistory');
     setHistory([]);
   };
 
-  // This function handles clicking on a past analysis item
+  // Function to handle clicking on a past analysis item
   const viewHistoryItem = (item: HistoryItem) => {
     // Set the selected item as the "current" analysis in session storage
     sessionStorage.setItem('currentAnalysis', JSON.stringify(item));
@@ -40,6 +42,7 @@ const History = () => {
     navigate('/analysis');
   };
 
+  // Helper function to format the timestamp into a "time ago" string
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const past = new Date(timestamp);
@@ -55,6 +58,7 @@ const History = () => {
     return `${diffInDays} d ago`;
   };
 
+  // Helper function to determine the color of the credibility badge
   const getCredibilityColor = (score: number) => {
     if (score >= 70) return "bg-success";
     if (score >= 40) return "bg-warning";
@@ -65,14 +69,12 @@ const History = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link to="/" className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Analyser
-              </Link>
-            </Button>
-          </div>
+          <Button variant="ghost" asChild>
+            <Link to="/" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Analyser
+            </Link>
+          </Button>
           
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold">Analysis History</h1>
@@ -94,7 +96,7 @@ const History = () => {
           {history.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <p className="text-muted-foreground">No analysis history yet</p>
+                <p className="text-muted-foreground">No analysis history yet.</p>
                 <Button asChild className="mt-4">
                   <Link to="/">Start Analyzing</Link>
                 </Button>
@@ -102,7 +104,6 @@ const History = () => {
             </Card>
           ) : (
             history.map((item) => (
-              // Make the entire card clickable
               <div
                 key={item.id}
                 onClick={() => viewHistoryItem(item)}
@@ -113,7 +114,6 @@ const History = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <h3 className="font-medium text-foreground mb-2">
-                          {/* Create a text preview */}
                           {item.text.substring(0, 80) + (item.text.length > 80 ? '...' : '')}
                         </h3>
                         <div className="flex items-center space-x-4">
