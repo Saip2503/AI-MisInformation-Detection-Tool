@@ -2,7 +2,7 @@ name: Deploy React App to GitHub Pages
 
 on:
   push:
-    branches: ["master"]   
+    branches: ["master"]
   workflow_dispatch:
 
 permissions:
@@ -24,17 +24,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18   # React works well with Node 18
+          node-version: 18
 
       - name: Install dependencies
         run: |
           cd Innovision-main
           npm install
 
-      - name: Build React app
+      - name: Build React app with SPA fallback
         run: |
           cd Innovision-main
-          npm run build
+          npm run predeploy
 
       - name: Upload production-ready build files
         uses: actions/upload-pages-artifact@v3
