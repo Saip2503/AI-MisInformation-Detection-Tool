@@ -24,10 +24,14 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies 📦
-        run: npm ci
+        run: 
+          cd Innovision-main
+          npm install 
 
       - name: Build Project 🏗️
-        run: npm run build
+        run: 
+          cd Innovision-main
+          npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }} # Use the secret here
 
