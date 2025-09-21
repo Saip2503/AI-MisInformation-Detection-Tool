@@ -26,7 +26,7 @@ origins = [
     "http://localhost:5173",  # For Vite/React development
     "http://localhost:3000",  # Common port for Create React App
     "http://localhost:8080"
-    # e.g., "https://your-frontend-domain.com"
+    "https://ai-mis-information-detection-tool-97h6jmm89.vercel.app"
 ]
 
 app.add_middleware(
