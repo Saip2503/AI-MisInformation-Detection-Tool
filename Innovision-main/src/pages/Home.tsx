@@ -48,7 +48,6 @@ const Home = () => {
 
       // Save a summary to history in localStorage
       const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
-      history.unshift(analysisResult); 
       history.unshift({
         id: Date.now(),
         preview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
